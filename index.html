@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Dashboard académico interactivo de KPIs y simulación determinística de carguío y acarreo." />
+  <title>Milla Haulage KPI Simulator</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">MILLA · HAULAGE KPI SIMULATOR</p>
+      <h1>Análisis y simulación de carguío y acarreo</h1>
+      <p class="subtitle">Dashboard académico basado en mediciones operacionales de campo anonimizadas.</p>
+    </div>
+    <div class="status-stack">
+      <span class="badge badge-green">DATOS DE CAMPO</span>
+      <span class="badge badge-amber">OPERACIÓN RESERVADA</span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="notice">
+      Los parámetros base provienen de mediciones operacionales de campo. La identidad y ubicación de la operación se mantienen reservadas por confidencialidad.
+    </section>
+
+    <section class="panel controls-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SELECCIÓN</p>
+          <h2>Filtros y escenario</h2>
+        </div>
+        <button id="resetBtn" class="btn btn-secondary">Restablecer línea base</button>
+      </div>
+
+      <div class="controls-grid filters-grid">
+        <label>Modelo de camión
+          <select id="truckFilter"></select>
+        </label>
+        <label>Pala
+          <select id="shovelFilter"></select>
+        </label>
+        <label>Turno
+          <select id="shiftFilter"></select>
+        </label>
+        <label>Distancia mínima (km)
+          <input id="distanceMin" type="number" step="0.01" />
+        </label>
+        <label>Distancia máxima (km)
+          <input id="distanceMax" type="number" step="0.01" />
+        </label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sliders-grid">
+        <div class="slider-card">
+          <div><span>Payload</span><strong id="payloadValue">0%</strong></div>
+          <input id="payloadSlider" type="range" min="-10" max="10" step="0.5" value="0" />
+          <small>Variación respecto del promedio observado</small>
+        </div>
+        <div class="slider-card">
+          <div><span>Tiempo de carga</span><strong id="loadValue">0%</strong></div>
+          <input id="loadSlider" type="range" min="0" max="20" step="1" value="0" />
+        </div>
+        <div class="slider-card">
+          <div><span>Viaje cargado</span><strong id="loadedValue">0%</strong></div>
+          <input id="loadedSlider" type="range" min="0" max="20" step="1" value="0" />
+        </div>
+        <div class="slider-card">
+          <div><span>Descarga</span><strong id="unloadValue">0%</strong></div>
+          <input id="unloadSlider" type="range" min="0" max="20" step="1" value="0" />
+        </div>
+        <div class="slider-card">
+          <div><span>Retorno</span><strong id="returnValue">0%</strong></div>
+          <input id="returnSlider" type="range" min="0" max="20" step="1" value="0" />
+        </div>
+        <div class="slider-card">
+          <div><span>Demoras</span><strong id="delayValue">0%</strong></div>
+          <input id="delaySlider" type="range" min="0" max="50" step="1" value="0" />
+        </div>
+      </div>
+    </section>
+
+    <section id="kpiGrid" class="kpi-grid"></section>
+
+    <section class="dashboard-grid two-thirds">
+      <article class="panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">CICLO</p>
+            <h2>Composición media</h2>
+          </div>
+        </div>
+        <div id="cycleComposition"></div>
+      </article>
+
+      <article class="panel result-panel">
+        <p class="eyebrow">RESULTADO DEL ESCENARIO</p>
+        <div class="result-number" id="improvementIndex">+0.00%</div>
+        <p id="classification" class="classification">LÍNEA BASE</p>
+        <div class="result-list">
+          <div><span>Minutos recuperados/ciclo</span><strong id="savedMinutes">0.00</strong></div>
+          <div><span>Toneladas equivalentes en 8 h</span><strong id="extraTonnes">0.0</strong></div>
+          <div><span>Principal contribución</span><strong id="dominantDriver">—</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel insight-panel">
+      <p class="eyebrow">INTERPRETACIÓN AUTOMÁTICA</p>
+      <p id="interpretation"></p>
+    </section>
+
+    <section class="dashboard-grid half-half">
+      <article class="panel">
+        <p class="eyebrow">COMPARACIÓN</p>
+        <h2>Productividad por modelo de camión</h2>
+        <div id="truckChart" class="bar-chart"></div>
+      </article>
+      <article class="panel">
+        <p class="eyebrow">COMPARACIÓN</p>
+        <h2>Productividad por pala</h2>
+        <div id="shovelChart" class="bar-chart"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading compact">
+        <div>
+          <p class="eyebrow">SENSIBILIDAD</p>
+          <h2>Respuesta de la productividad</h2>
+        </div>
+        <label class="inline-select">Parámetro
+          <select id="sensitivityParameter">
+            <option>Carga</option>
+            <option>Viaje cargado</option>
+            <option>Descarga</option>
+            <option>Retorno</option>
+            <option selected>Demoras</option>
+          </select>
+        </label>
+      </div>
+      <div id="sensitivityChart" class="svg-chart"></div>
+    </section>
+
+    <section class="panel footer-actions">
+      <div>
+        <p class="eyebrow">TRAZABILIDAD</p>
+        <h2>150 ciclos de campo anonimizados</h2>
+        <p>El escenario es una proyección matemática y no constituye una instrucción operacional.</p>
+      </div>
+      <div class="button-row">
+        <button id="downloadBtn" class="btn btn-primary">Descargar escenario CSV</button>
+        <a class="btn btn-secondary" href="docs/METHODOLOGY.md">Ver metodología</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Milla Haulage KPI Simulator · versión académica</span>
+    <a href="https://github.com/DDev1822/milla-haulage-kpi-simulator">Repositorio GitHub</a>
+  </footer>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
