@@ -1,0 +1,67 @@
+name: Validate dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        run: node --check js/app.js
+
+      - name: Validate anonymized dataset and baseline
+        run: |
+          python - <<'PY'
+          import csv
+          from math import isclose
+          from pathlib import Path
+
+          path = Path('data/ciclos_campo_anonimizados.csv')
+          with path.open(encoding='utf-8-sig', newline='') as handle:
+              rows = list(csv.DictReader(handle))
+
+          assert len(rows) == 150, len(rows)
+          assert len({int(row['id_ciclo']) for row in rows}) == 150
+
+          total_tonnes = sum(float(row['toneladas']) for row in rows)
+          total_cycle = sum(float(row['tiempo_ciclo_total_min']) for row in rows)
+          weighted_productivity = total_tonnes / (total_cycle / 60)
+
+          assert isclose(total_tonnes, 17859.9, abs_tol=1e-6)
+          assert isclose(weighted_productivity, 228.44930320014157, abs_tol=1e-9)
+
+          fields = [
+              'tiempo_carga_min',
+              'tiempo_viaje_cargado_min',
+              'tiempo_descarga_min',
+              'tiempo_retorno_min',
+              'demoras_min',
+          ]
+          for row in rows:
+              component_sum = sum(float(row[field]) for field in fields)
+              cycle = float(row['tiempo_ciclo_total_min'])
+              recalculated = float(row['toneladas']) / (cycle / 60)
+              assert isclose(component_sum, cycle, abs_tol=1e-9)
+              assert isclose(recalculated, float(row['productividad_tph']), rel_tol=1e-12)
+
+          print('150 cycles validated')
+          print(f'Total tonnes: {total_tonnes:.1f}')
+          print(f'Weighted productivity: {weighted_productivity:.6f} t/h')
+          PY
+
+      - name: Confirm public files
+        run: |
+          test -f index.html
+          test -f assets/styles.css
+          test -f docs/METHODOLOGY.md
+          test -f docs/KPI_CATALOG.md
