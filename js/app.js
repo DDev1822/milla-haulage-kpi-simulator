@@ -141,6 +141,7 @@ function renderBarChart(id,data) {
 
 function classify(pct) {
   if (Math.abs(pct)<0.005) return 'LÍNEA BASE';
+  if (pct<0) return 'DETERIORO';
   if (pct<2) return 'MEJORA MARGINAL';
   if (pct<5) return 'MEJORA MODERADA';
   if (pct<=10) return 'MEJORA SIGNIFICATIVA';
@@ -161,13 +162,20 @@ function renderResult(base, scenario) {
   };
   const dominant = Object.entries(savings).sort((a,b)=>b[1]-a[1])[0];
   const driver = dominant[1] > 0.0001 ? dominant[0] : (inputs.payload!==0?'Payload':'—');
-  document.querySelector('#improvementIndex').textContent = `${pct>=0?'+':''}${fmt(pct)}%`;
-  document.querySelector('#classification').textContent = classify(pct);
+  const resultNumber = document.querySelector('#improvementIndex');
+  const classificationNode = document.querySelector('#classification');
+  resultNumber.textContent = `${pct>=0?'+':''}${fmt(pct)}%`;
+  resultNumber.style.color = pct < 0 ? '#ff6b6b' : '#38d39f';
+  classificationNode.textContent = classify(pct);
+  classificationNode.style.color = pct < 0 ? '#ff6b6b' : '#38d39f';
+  classificationNode.style.background = pct < 0 ? '#3b2026' : '#12372e';
   document.querySelector('#savedMinutes').textContent = `${fmt(saved)} min`;
   document.querySelector('#extraTonnes').textContent = `${extra>=0?'+':''}${fmt(extra,1)} t`;
   document.querySelector('#dominantDriver').textContent = driver;
   const aggressive = Math.max(inputs.load,inputs.loaded,inputs.unload,inputs.returning,inputs.delay)>20 || pct>10;
-  document.querySelector('#interpretation').textContent = `El escenario modifica la productividad ponderada de ${fmt(base.weightedProductivity)} a ${fmt(scenario.weightedProductivity)} t/h (${pct>=0?'+':''}${fmt(pct)}%). Se recuperan ${fmt(saved)} minutos por ciclo y la mayor contribución directa proviene de ${driver.toLowerCase()}. ${aggressive?'El nivel de intervención es agresivo y requiere validación operacional antes de su aplicación.':'El resultado es una proyección determinística y debe contrastarse con condiciones operacionales reales.'}`;
+  const timeEffect = saved >= 0 ? `Se recuperan ${fmt(saved)} minutos por ciclo` : `El ciclo aumenta ${fmt(Math.abs(saved))} minutos`;
+  const direction = pct >= 0 ? 'mejora' : 'disminuye';
+  document.querySelector('#interpretation').textContent = `El escenario ${direction} la productividad ponderada de ${fmt(base.weightedProductivity)} a ${fmt(scenario.weightedProductivity)} t/h (${pct>=0?'+':''}${fmt(pct)}%). ${timeEffect} y el parámetro con mayor efecto directo es ${driver.toLowerCase()}. ${aggressive?'El nivel de intervención es agresivo y requiere validación operacional antes de su aplicación.':'El resultado es una proyección determinística y debe contrastarse con condiciones operacionales reales.'}`;
 }
 
 function sensitivityRows(rows, parameter) {
